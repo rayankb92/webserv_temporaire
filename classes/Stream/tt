@@ -1,0 +1,34 @@
+void Server::start() {
+    std::vector<epoll_event> events(SOMAXCONN);
+    for (;;) {
+        std::cout << "WAITING" << std::endl;
+        int numEvents = epoll_wait(_epollFd, events.data(), SOMAXCONN, -1);
+        std::cout << "Numevent = " << numEvents << std::endl;
+        for (int i = 0; i < numEvents; ++i) {
+            if (events[i].data.fd == _socketFd) {
+                // ...
+            } else {
+                std::cout << "ELSE" << std::endl;
+                char buff[BUFF_LEN + 1];
+                int receipt;
+                while ((receipt = recv(events[i].data.fd, buff, BUFF_LEN, 0)) > 0) {
+                    buff[receipt] = '\0'; // Assurez-vous que le tampon est correctement terminé par un null-terminator
+                    // Le reste du traitement des données lues ici
+                    // ...
+                    std::cout << "Received data: " << buff << std::endl;
+                }
+                if (receipt == 0) {
+                    // Connexion fermée par le client
+                    std::cout << "Connection closed by peer." << std::endl;
+                    close(events[i].data.fd); // Fermer le descripteur de fichier
+                } else if (receipt == -1) {
+                    // Gestion des erreurs de lecture
+                    std::cerr << "Recv failed: " << strerror(errno) << '\n';
+                    close(events[i].data.fd); // Fermer le descripteur de fichier
+                }
+            }
+        }
+        std::cout << "FIN FOR" << std::endl;
+    }
+    std::cout << "FIN WHILE" << std::endl;
+}
